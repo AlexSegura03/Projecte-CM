@@ -14,7 +14,7 @@ public class FPSController : MonoBehaviour
     public LayerMask mascaraTerra;
 
     [Header("Vista")]
-    public float sensibilitatRatoli = 100f;
+    public float sensibilitatRatoli = 200f;
     public Camera cameraPOV;
 
     Vector3 velocitatVertical;

@@ -5,3 +5,4 @@ Fet per:
 - Bernat Rubiol
 - Àlex Segura
 - Hug Feijoo
+- Eduard Peñas
