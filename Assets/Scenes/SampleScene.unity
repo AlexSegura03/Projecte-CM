@@ -131,7 +131,7 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Main Camera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
@@ -267,7 +267,7 @@ GameObject:
   - component: {fileID: 332404594}
   - component: {fileID: 332404596}
   - component: {fileID: 332404595}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Spot Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -612,6 +612,11 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: f3126d8f1c37fcf4ebd9ba1b02714e31, type: 3}
   m_PrefabInstance: {fileID: 1661468177}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &922191802 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f3126d8f1c37fcf4ebd9ba1b02714e31, type: 3}
+  m_PrefabInstance: {fileID: 1661468177}
+  m_PrefabAsset: {fileID: 0}
 --- !u!64 &922191803
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -776,7 +781,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.000030517578, y: -17}
+  m_AnchoredPosition: {x: 0, y: -17}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1604467179
@@ -900,7 +905,7 @@ GameObject:
   - component: {fileID: 2053572216}
   - component: {fileID: 2053572218}
   - component: {fileID: 2053572217}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Jugador
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -940,7 +945,7 @@ MonoBehaviour:
   velocitatMoviment: 12
   velocitatSalt: 3
   gravetat: -25
-  groundCheck: {fileID: 0}
+  groundCheck: {fileID: 922191802}
   distanciaTerra: 0.4
   mascaraTerra:
     serializedVersion: 2
