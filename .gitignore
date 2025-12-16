@@ -7,7 +7,6 @@ UserSettings/
 MemoryCaptures/
 Build/
 Builds/
-Assets/Plugins/Editor/
 
 # Package cache (evitar Burst, LLVM, etc)
 **/PackageCache/
