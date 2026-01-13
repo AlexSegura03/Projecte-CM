@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class FPSController : MonoBehaviour
 {
@@ -7,6 +8,10 @@ public class FPSController : MonoBehaviour
     public float velocitatMoviment = 12f;
     public float velocitatSalt = 3f;
     public float gravetat = -9.81f;
+    [Header("Correr")]
+    public KeyCode teclaCorrer = KeyCode.LeftControl;
+    public float multiplicadorCorrer = 1.6f;
+
 
     [Header("Terra")]
     public Transform groundCheck;
@@ -30,11 +35,26 @@ public class FPSController : MonoBehaviour
     public float tremolorRotacio = 0.5f;
     public float balanceigMoviment = 1.5f;
 
+    [Header("Fallades Llanterna")]
+    public float tempsMinEntreFallades = 6f;
+    public float tempsMaxEntreFallades = 15f;
+    public float duracioApagada = 1.2f;
+    public int parpelleigsMin = 2;
+    public int parpelleigsMax = 3;
+
+    [Header("So Llanterna")]
+    public AudioSource audioSource;
+    public AudioClip soClickManual;
+    public AudioClip soClickFallada;
+
+
     Vector3 velocitatVertical;
     bool estaAlTerra;
-    float rotacioVertical = 0f;
+    float rotacioVertical;
     bool llanternaActiva = true;
+    bool falladaActiva = false;
 
+    float temporitzadorFallada;
     Quaternion rotacioObjectiu;
 
     void Start()
@@ -45,8 +65,8 @@ public class FPSController : MonoBehaviour
         if (cameraPOV == null)
             cameraPOV = Camera.main;
 
-        if (llanternaLight != null)
-            intensitatBase = llanternaLight.intensity;
+        intensitatBase = llanternaLight.intensity;
+        ResetTemporitzadorFallada();
     }
 
     void Update()
@@ -61,19 +81,25 @@ public class FPSController : MonoBehaviour
     void ComprovarTerra()
     {
         estaAlTerra = Physics.CheckSphere(groundCheck.position, distanciaTerra, mascaraTerra);
-
         if (estaAlTerra && velocitatVertical.y < 0)
             velocitatVertical.y = -2f;
     }
 
     void Moviment()
-    {
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
+{
+    float x = Input.GetAxis("Horizontal");
+    float z = Input.GetAxis("Vertical");
 
-        Vector3 moviment = transform.right * x + transform.forward * z;
-        controller.Move(moviment * velocitatMoviment * Time.deltaTime);
-    }
+    bool corrent = Input.GetKey(teclaCorrer) && z > 0.1f;
+
+    float velocitatActual = corrent
+        ? velocitatMoviment * multiplicadorCorrer
+        : velocitatMoviment;
+
+    Vector3 moviment = transform.right * x + transform.forward * z;
+    controller.Move(moviment * velocitatActual * Time.deltaTime);
+}
+
 
     void SaltIGravetat()
     {
@@ -101,45 +127,103 @@ public class FPSController : MonoBehaviour
         if (llanternaPivot == null || llanternaLight == null)
             return;
 
-        // Encesa / apagada
+        // Toggle manual
         if (Input.GetKeyDown(teclaLlanterna))
         {
             llanternaActiva = !llanternaActiva;
             llanternaLight.enabled = llanternaActiva;
+
+            PlayClick(false); // manual
+
+            if (llanternaActiva)
+                ResetTemporitzadorFallada();
         }
 
-        if (!llanternaActiva)
+
+
+        if (!llanternaActiva || falladaActiva)
             return;
 
-        // Rotació objectiu (vista)
+        // --- FALLADA DINÀMICA (més risc corrent) ---
+        float moviment = controller.velocity.magnitude;
+        float multiplicador = moviment > velocitatMoviment * 0.6f ? 0.4f : 1f;
+
+        temporitzadorFallada -= Time.deltaTime * (1f / multiplicador);
+
+        if (temporitzadorFallada <= 0f)
+        {
+            StartCoroutine(FalladaLlanterna());
+            ResetTemporitzadorFallada();
+            return;
+        }
+
+        // Rotació objectiu
         rotacioObjectiu = Quaternion.Euler(
             cameraPOV.transform.eulerAngles.x,
             transform.eulerAngles.y,
             0f
         );
 
-        // Tremolor
         Quaternion tremolor = Quaternion.Euler(
             Random.Range(-tremolorRotacio, tremolorRotacio),
             Random.Range(-tremolorRotacio, tremolorRotacio),
             0f
         );
 
-        // Suavitzat + inèrcia
         llanternaPivot.rotation = Quaternion.Slerp(
             llanternaPivot.rotation,
             rotacioObjectiu * tremolor,
             retardRotacio * Time.deltaTime
         );
 
-        // Balanceig amb el moviment
-        float moviment = controller.velocity.magnitude;
         float balanceig = Mathf.Sin(Time.time * 6f) * moviment * balanceigMoviment;
-
         llanternaPivot.localRotation *= Quaternion.Euler(balanceig, 0f, 0f);
 
-        // Flickering
         float flicker = Mathf.PerlinNoise(Time.time * flickerVelocitat, 0f);
         llanternaLight.intensity = intensitatBase + (flicker - 0.5f) * flickerIntensitat;
     }
+
+    IEnumerator FalladaLlanterna()
+    {
+        falladaActiva = true;
+
+        int parpelleigs = Random.Range(parpelleigsMin, parpelleigsMax + 1);
+
+        for (int i = 0; i < parpelleigs; i++)
+        {
+            llanternaLight.enabled = false;
+            PlayClick(true); // fallada
+            yield return new WaitForSeconds(Random.Range(0.05f, 0.12f));
+            llanternaLight.enabled = true;
+            yield return new WaitForSeconds(Random.Range(0.05f, 0.12f));
+        }
+
+        llanternaLight.enabled = false;
+        PlayClick(true);
+
+        llanternaActiva = false; // OBLIGA a prémer F
+        falladaActiva = false;
+    }
+
+    void ResetTemporitzadorFallada()
+    {
+        temporitzadorFallada = Random.Range(tempsMinEntreFallades, tempsMaxEntreFallades);
+    }
+
+    void PlayClick(bool esFallada)
+    {
+        if (audioSource == null) return;
+
+        audioSource.pitch = esFallada
+            ? Random.Range(0.85f, 1.1f)
+            : 1f;
+
+        AudioClip clip = esFallada ? soClickFallada : soClickManual;
+
+        if (clip != null)
+            audioSource.PlayOneShot(clip);
+
+        audioSource.pitch = 1f;
+    }
+
 }
