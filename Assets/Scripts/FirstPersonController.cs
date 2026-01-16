@@ -8,10 +8,10 @@ public class FPSController : MonoBehaviour
     public float velocitatMoviment = 12f;
     public float velocitatSalt = 3f;
     public float gravetat = -9.81f;
-    [Header("Correr")]
+
+    [Header("Córrer")]
     public KeyCode teclaCorrer = KeyCode.LeftControl;
     public float multiplicadorCorrer = 1.6f;
-
 
     [Header("Terra")]
     public Transform groundCheck;
@@ -21,6 +21,12 @@ public class FPSController : MonoBehaviour
     [Header("Vista")]
     public float sensibilitatRatoli = 200f;
     public Camera cameraPOV;
+
+    [Header("Interacció")]
+    public float distanciaInteraccio = 3f;
+    public LayerMask capaInteraccio; // Recorda assignar això al Inspector!
+    public KeyCode teclaInteractuar = KeyCode.E;
+    public bool teClau = false; // Inventari simple
 
     [Header("Llanterna")]
     public Transform llanternaPivot;
@@ -47,7 +53,6 @@ public class FPSController : MonoBehaviour
     public AudioClip soClickManual;
     public AudioClip soClickFallada;
 
-
     Vector3 velocitatVertical;
     bool estaAlTerra;
     float rotacioVertical;
@@ -65,7 +70,9 @@ public class FPSController : MonoBehaviour
         if (cameraPOV == null)
             cameraPOV = Camera.main;
 
-        intensitatBase = llanternaLight.intensity;
+        if (llanternaLight != null)
+            intensitatBase = llanternaLight.intensity;
+            
         ResetTemporitzadorFallada();
     }
 
@@ -76,6 +83,7 @@ public class FPSController : MonoBehaviour
         SaltIGravetat();
         Vista();
         Llanterna();
+        LogicaInteraccio(); // NOVA FUNCIÓ
     }
 
     void ComprovarTerra()
@@ -86,20 +94,19 @@ public class FPSController : MonoBehaviour
     }
 
     void Moviment()
-{
-    float x = Input.GetAxis("Horizontal");
-    float z = Input.GetAxis("Vertical");
+    {
+        float x = Input.GetAxis("Horizontal");
+        float z = Input.GetAxis("Vertical");
 
-    bool corrent = Input.GetKey(teclaCorrer) && z > 0.1f;
+        bool corrent = Input.GetKey(teclaCorrer) && z > 0.1f;
 
-    float velocitatActual = corrent
-        ? velocitatMoviment * multiplicadorCorrer
-        : velocitatMoviment;
+        float velocitatActual = corrent
+            ? velocitatMoviment * multiplicadorCorrer
+            : velocitatMoviment;
 
-    Vector3 moviment = transform.right * x + transform.forward * z;
-    controller.Move(moviment * velocitatActual * Time.deltaTime);
-}
-
+        Vector3 moviment = transform.right * x + transform.forward * z;
+        controller.Move(moviment * velocitatActual * Time.deltaTime);
+    }
 
     void SaltIGravetat()
     {
@@ -122,6 +129,50 @@ public class FPSController : MonoBehaviour
         transform.Rotate(Vector3.up * mouseX);
     }
 
+    void LogicaInteraccio()
+    {
+        if (Input.GetKeyDown(teclaInteractuar))
+        {
+            RaycastHit hit;
+            // Llancem un raig des del centre de la càmera
+            if (Physics.Raycast(cameraPOV.transform.position, cameraPOV.transform.forward, out hit, distanciaInteraccio, capaInteraccio))
+            {
+                // CAS 1: Trobem la clau
+                if (hit.collider.CompareTag("Clau"))
+                {
+                    teClau = true;
+                    Debug.Log("Has agafat la clau!");
+                    
+                    if (audioSource != null && soClickManual != null) 
+                        audioSource.PlayOneShot(soClickManual); // So feedback
+
+                    Destroy(hit.collider.gameObject);
+                }
+                // CAS 2: Trobem la porta
+                else if (hit.collider.CompareTag("Porta"))
+                {
+                    // Busquem el script "Porta" dins l'objecte
+                    Porta scriptPorta = hit.collider.GetComponent<Porta>();
+
+                    if (scriptPorta != null)
+                    {
+                        if (teClau)
+                        {
+                            Debug.Log("Obrint porta...");
+                            scriptPorta.ObrirPorta();
+                        }
+                        else
+                        {
+                            Debug.Log("Està tancada. Necessites la clau.");
+                            if (audioSource != null && soClickFallada != null) 
+                                audioSource.PlayOneShot(soClickFallada); // So de tancat
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     void Llanterna()
     {
         if (llanternaPivot == null || llanternaLight == null)
@@ -139,12 +190,10 @@ public class FPSController : MonoBehaviour
                 ResetTemporitzadorFallada();
         }
 
-
-
         if (!llanternaActiva || falladaActiva)
             return;
 
-        // --- FALLADA DINÀMICA (més risc corrent) ---
+        // --- FALLADA DINÀMICA ---
         float moviment = controller.velocity.magnitude;
         float multiplicador = moviment > velocitatMoviment * 0.6f ? 0.4f : 1f;
 
@@ -201,7 +250,7 @@ public class FPSController : MonoBehaviour
         llanternaLight.enabled = false;
         PlayClick(true);
 
-        llanternaActiva = false; // OBLIGA a prémer F
+        llanternaActiva = false; 
         falladaActiva = false;
     }
 
@@ -225,5 +274,4 @@ public class FPSController : MonoBehaviour
 
         audioSource.pitch = 1f;
     }
-
 }
