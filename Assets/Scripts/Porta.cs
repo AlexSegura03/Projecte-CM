@@ -1,20 +1,44 @@
 using UnityEngine;
-using TMPro; // Añadimos esto para controlar el texto de TextMeshPro
+using TMPro;
+using System.Collections;
 
 public class Porta : MonoBehaviour
 {
-    public TextMeshProUGUI textoUI; // Arrastra aquí el componente de texto del Canvas
-    private bool jugadorAProp = false;
+    public TextMeshProUGUI textoUI;
+    
+    [Header("Configuració Temporal")]
+    public MeshRenderer visualPorta;  
+    public BoxCollider coliderSolid;  
+    public float tempsOberta = 4f;    
 
-    // Dentro del Update del script Porta
+    private bool jugadorAProp = false;
+    private bool estaOberta = false;
+    private bool portaBloquejada = false; // Nueva variable para el bloqueo final
+
+    void Start()
+    {
+        InteraccionLlave.teLaClau = false;
+    }
+
+    // Función "puente" para evitar el error CS1061 del FirstPersonController
+    public void ObrirPorta()
+    {
+        if (!estaOberta && !portaBloquejada) 
+        {
+            StartCoroutine(ObrirTemporbalment());
+        }
+    }
+
     void Update()
     {
-        if (jugadorAProp)
+        // Si la puerta ya se bloqueó, no hacemos nada más
+        if (portaBloquejada) return;
+
+        if (jugadorAProp && !estaOberta)
         {
-            // IMPORTANTE: Aquí debe poner el nombre exacto del script de la llave
             if (InteraccionLlave.teLaClau) 
             {
-                textoUI.text = "Prem E per passar";
+                textoUI.text = "Prem E per passar ";
                 if (Input.GetKeyDown(KeyCode.E))
                 {
                     ObrirPorta();
@@ -26,23 +50,36 @@ public class Porta : MonoBehaviour
             }
         }
     }
-    void Start()
+
+    IEnumerator ObrirTemporbalment()
     {
-        // Al empezar el nivel, aseguramos que la llave no esté recogida
-        InteraccionLlave.teLaClau = false;
-    }
-    public void ObrirPorta()
-    {
-        textoUI.gameObject.SetActive(false); // Ocultamos el texto
-        Destroy(gameObject); // Destruimos la puerta
+        estaOberta = true;
+        textoUI.gameObject.SetActive(false);
+
+        // 1. Abrimos la puerta
+        visualPorta.enabled = false;
+        coliderSolid.enabled = false;
+        Debug.Log("Porta oberta... corre!");
+
+        // 2. Esperamos el tiempo de seguridad
+        yield return new WaitForSeconds(tempsOberta);
+
+        // 3. Cerramos la puerta para siempre
+        visualPorta.enabled = true;
+        coliderSolid.enabled = true;
+        estaOberta = false;
+        portaBloquejada = true; // <--- AQUÍ se bloquea para siempre
+        
+        Debug.Log("La puerta se ha sellado. Ya no puedes volver.");
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        // Solo mostramos el texto si la puerta NO está bloqueada
+        if (other.CompareTag("Player") && !portaBloquejada)
         {
             jugadorAProp = true;
-            textoUI.gameObject.SetActive(true);
+            if (!estaOberta) textoUI.gameObject.SetActive(true);
         }
     }
 

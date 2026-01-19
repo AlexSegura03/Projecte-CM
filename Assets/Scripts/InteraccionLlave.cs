@@ -2,13 +2,18 @@ using UnityEngine;
 
 public class InteraccionLlave : MonoBehaviour
 {
+    // Variables estáticas (globales)
     public static bool teLaClau = false; 
-    public GameObject indicatiuUI; // Arrastra aquí el "TextLlave" que acabas de crear
+    public static bool teLaClauFinal = false; // Nueva variable para la victoria
+
+    [Header("Configuración")]
+    public bool esLlaveDeVictoria = false; // ¡Marca esto en el Inspector para la segunda llave!
+    
+    public GameObject indicatiuUI; 
     private bool jugadorAProp = false;
 
     void Update()
     {
-        // Si estamos cerca y pulsamos la E
         if (jugadorAProp && Input.GetKeyDown(KeyCode.E))
         {
             AgafarLlave();
@@ -17,12 +22,18 @@ public class InteraccionLlave : MonoBehaviour
 
     void AgafarLlave()
     {
-        teLaClau = true;
+        // Si es la llave de victoria, activamos su propia variable
+        if (esLlaveDeVictoria) 
+        {
+            teLaClauFinal = true;
+        }
+        else 
+        {
+            teLaClau = true;
+        }
         
-        // Es vital ocultar el texto antes de que la llave desaparezca
         if (indicatiuUI != null) indicatiuUI.SetActive(false);
-        
-        Debug.Log("¡LLAVE RECOGIDA!");
+        Debug.Log("¡LLAVE RECOGIDA! ¿Es final?: " + esLlaveDeVictoria);
         gameObject.SetActive(false); 
     }
 
@@ -31,7 +42,6 @@ public class InteraccionLlave : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             jugadorAProp = true;
-            // Mostramos el aviso al acercarnos
             if (indicatiuUI != null) indicatiuUI.SetActive(true);
         }
     }
@@ -41,7 +51,6 @@ public class InteraccionLlave : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             jugadorAProp = false;
-            // Ocultamos el aviso al alejarnos
             if (indicatiuUI != null) indicatiuUI.SetActive(false);
         }
     }
