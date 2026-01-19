@@ -2,41 +2,47 @@ using UnityEngine;
 
 public class InteraccionLlave : MonoBehaviour
 {
-    private bool estaCerca = false;
+    public static bool teLaClau = false; 
+    public GameObject indicatiuUI; // Arrastra aquí el "TextLlave" que acabas de crear
+    private bool jugadorAProp = false;
+
+    void Update()
+    {
+        // Si estamos cerca y pulsamos la E
+        if (jugadorAProp && Input.GetKeyDown(KeyCode.E))
+        {
+            AgafarLlave();
+        }
+    }
+
+    void AgafarLlave()
+    {
+        teLaClau = true;
+        
+        // Es vital ocultar el texto antes de que la llave desaparezca
+        if (indicatiuUI != null) indicatiuUI.SetActive(false);
+        
+        Debug.Log("¡LLAVE RECOGIDA!");
+        gameObject.SetActive(false); 
+    }
 
     private void OnTriggerEnter(Collider other)
     {
-        // Si el jugador entra en la zona de la llave
         if (other.CompareTag("Player"))
         {
-            estaCerca = true;
-            Debug.Log("Pulsa E para recoger la llave");
+            jugadorAProp = true;
+            // Mostramos el aviso al acercarnos
+            if (indicatiuUI != null) indicatiuUI.SetActive(true);
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        // Si el jugador se aleja de la llave
         if (other.CompareTag("Player"))
         {
-            estaCerca = false;
+            jugadorAProp = false;
+            // Ocultamos el aviso al alejarnos
+            if (indicatiuUI != null) indicatiuUI.SetActive(false);
         }
-    }
-
-    private void Update()
-    {
-        // Si estamos cerca y pulsamos la tecla E
-        if (estaCerca && Input.GetKeyDown(KeyCode.E))
-        {
-            Recoger();
-        }
-    }
-
-    void Recoger()
-    {
-        // Aquí activamos la variable global de la llave (que hicimos ayer)
-        // O simplemente hacemos que la llave desaparezca
-        Debug.Log("¡Llave recogida con la E!");
-        gameObject.SetActive(false); 
     }
 }
