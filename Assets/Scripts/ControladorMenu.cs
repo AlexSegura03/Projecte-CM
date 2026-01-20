@@ -6,6 +6,7 @@ public class ControladorMenu : MonoBehaviour
     public void EmpezarJuego()
     {
         // Ponemos el nombre exacto de tu escena de juego
+        Time.timeScale = 1f; // <--- ESTO ES VITAL
         SceneManager.LoadScene("SampleScene"); 
     }
 
