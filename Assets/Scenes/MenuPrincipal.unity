@@ -176,7 +176,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'LABERINT MALEIT '
+  m_text: "LABERINT MALE\xCFT\n "
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: e364ee5b38342ae42a4661603b4d6d5d, type: 2}
   m_sharedMaterial: {fileID: 6361550028820506129, guid: e364ee5b38342ae42a4661603b4d6d5d, type: 2}
