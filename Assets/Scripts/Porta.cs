@@ -5,40 +5,82 @@ using System.Collections;
 public class Porta : MonoBehaviour
 {
     public TextMeshProUGUI textoUI;
-    
-    [Header("Configuració Temporal")]
-    public MeshRenderer visualPorta;  
-    public BoxCollider coliderSolid;  
-    public float tempsOberta = 4f;    
+
+    [Header("Configuració Porta")]
+    public float tempsOberta = 4f;
+    public float angleObert = 90f;
+    public float velocitatGir = 2f;
+
+    [Header("Frontissa")]
+    public Vector3 offsetFrontissa = new Vector3(-0.25f, 0f, 0f); // posició de la frontissa respecte al pivot
+    public bool obrirCapEndins = true;
+
+
+    [Header("Collider Porta")]
+    public Vector3 midaCollider = new Vector3(0.5f, 10f, 10f);
+    public Vector3 offsetCollider = new Vector3(0f, 5f, 0f);
+
+    [Header("Temps Espera")]
+    public float tempsEsperaClau = 0.5f; // Segons que espera entre so clau i gir
+
+
+    [Header("So de la porta")]
+    public AudioClip clipClau;
+    public AudioClip clipRovellat;
+    public AudioSource audioSource; // només un AudioSource que reprodueix tots dos clips
+
 
     private bool jugadorAProp = false;
     private bool estaOberta = false;
-    private bool portaBloquejada = false; // Nueva variable para el bloqueo final
+    private bool portaBloquejada = false;
+
+    private Quaternion rotacioTancada;
+    private Quaternion rotacioOberta;
+
+    private BoxCollider colliderSolid;
+    private BoxCollider colliderTrigger;
+    private Vector3 puntFrontissaWorld;
+
 
     void Start()
     {
         InteraccionLlave.teLaClau = false;
+
+        // Guardem punt de frontissa en coordenades WORLD
+        puntFrontissaWorld = transform.position + transform.TransformDirection(offsetFrontissa);
+
+        rotacioTancada = transform.rotation;
+        rotacioOberta = Quaternion.Euler(transform.eulerAngles + new Vector3(0, angleObert, 0));
+
+        colliderSolid = gameObject.AddComponent<BoxCollider>();
+        colliderSolid.isTrigger = false;
+        colliderSolid.size = midaCollider;
+        colliderSolid.center = offsetCollider;
+
+        colliderTrigger = gameObject.AddComponent<BoxCollider>();
+        colliderTrigger.isTrigger = true;
+        colliderTrigger.size = midaCollider + new Vector3(1f, 0f, 1f);
+        colliderTrigger.center = offsetCollider;
     }
 
-    // Función "puente" para evitar el error CS1061 del FirstPersonController
+
     public void ObrirPorta()
     {
-        if (!estaOberta && !portaBloquejada) 
+        if (!estaOberta && !portaBloquejada)
         {
-            StartCoroutine(ObrirTemporbalment());
+            StartCoroutine(ObrirTemporalment());
         }
     }
 
     void Update()
     {
-        // Si la puerta ya se bloqueó, no hacemos nada más
         if (portaBloquejada) return;
 
         if (jugadorAProp && !estaOberta)
         {
-            if (InteraccionLlave.teLaClau) 
+            if (InteraccionLlave.teLaClau)
             {
-                textoUI.text = "Prem E per passar ";
+                textoUI.text = "Prem E per passar";
                 if (Input.GetKeyDown(KeyCode.E))
                 {
                     ObrirPorta();
@@ -51,31 +93,68 @@ public class Porta : MonoBehaviour
         }
     }
 
-    IEnumerator ObrirTemporbalment()
+    IEnumerator ObrirTemporalment()
     {
         estaOberta = true;
         textoUI.gameObject.SetActive(false);
 
-        // 1. Abrimos la puerta
-        visualPorta.enabled = false;
-        coliderSolid.enabled = false;
+        // 1️⃣ Reproduir so de la clau
+        if (clipClau != null)
+            audioSource.PlayOneShot(clipClau, 3f);
+
+        // 2️⃣ Esperar 0.5 segon abans de girar
+        yield return new WaitForSeconds(tempsEsperaClau);
+
+        // 3️⃣ Reproduir so rovellat de la porta
+        if (clipRovellat != null)
+            audioSource.PlayOneShot(clipRovellat, 6f);
+
+        // 4️⃣ Girar porta
+        yield return StartCoroutine(GirarPorta(angleObert));
+
+        colliderSolid.enabled = false;
         Debug.Log("Porta oberta... corre!");
 
-        // 2. Esperamos el tiempo de seguridad
+        // 5️⃣ Esperar tempsOberta abans de tancar
         yield return new WaitForSeconds(tempsOberta);
 
-        // 3. Cerramos la puerta para siempre
-        visualPorta.enabled = true;
-        coliderSolid.enabled = true;
+        // 6️⃣ Girar porta per tancar
+        yield return StartCoroutine(GirarPorta(-angleObert));
+
+        colliderSolid.enabled = true;
         estaOberta = false;
-        portaBloquejada = true; // <--- AQUÍ se bloquea para siempre
-        
-        Debug.Log("La puerta se ha sellado. Ya no puedes volver.");
+        portaBloquejada = true;
+
+        Debug.Log("La porta s'ha segellat per sempre.");
+    }
+
+    IEnumerator GirarPorta(float angleFinal)
+    {
+        float angleActual = 0f;
+
+        // IMPORTANT: direcció depèn de si obres o tanques
+        float direccio = angleFinal > 0 ? 1f : -1f;
+        if (!obrirCapEndins) direccio *= -1f;
+
+        while (angleActual < Mathf.Abs(angleFinal))
+        {
+            float pas = Time.deltaTime * velocitatGir * 90f;
+            if (angleActual + pas > Mathf.Abs(angleFinal))
+                pas = Mathf.Abs(angleFinal) - angleActual;
+
+            transform.RotateAround(
+                puntFrontissaWorld,
+                Vector3.up,
+                pas * direccio
+            );
+
+            angleActual += pas;
+            yield return null;
+        }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        // Solo mostramos el texto si la puerta NO está bloqueada
         if (other.CompareTag("Player") && !portaBloquejada)
         {
             jugadorAProp = true;
