@@ -6006,7 +6006,7 @@ MonoBehaviour:
   obrirCapEndins: 0
   midaCollider: {x: 0.5, y: 10, z: 10}
   offsetCollider: {x: 0, y: 5, z: 0}
-  tempsEsperaClau: 1
+  tempsEsperaClau: 2
   clipClau: {fileID: 8300000, guid: fd97188db974b564783ccee641de5c7b, type: 3}
   clipRovellat: {fileID: 8300000, guid: fa876afb1aff17646b5db4fc131fc160, type: 3}
   audioSource: {fileID: 1023060011}
